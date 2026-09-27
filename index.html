@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pistospäiväkirja</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pistokset">
+<meta name="theme-color" content="#F4F4EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F4F4EF;--surface:#FFFFFF;--line:#DCDDD5;--text:#17181A;--muted:#6B6F75;
+  --accent:#8A9A00;--accent-ink:#17181A;--chip:#EDEEE6;--reta:#2F6FB5;--reta-bg:#E3ECF7;--testo:#B0662A;--testo-bg:#F7EBDF;
+  --ok:#2E7D4F;--late:#B5541B;--today:#FBF7D9;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121417;--surface:#1B1E23;--line:#2B2F36;--text:#EDEDE8;--muted:#8B9098;
+    --accent:#D7F000;--accent-ink:#121417;--chip:#242830;--reta:#8FB8EE;--reta-bg:#1D2A3B;--testo:#F0B074;--testo-bg:#3A2A1C;
+    --ok:#7BD48F;--late:#F0A060;--today:#2A2C1A;
+  }
+}
+*{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Barlow,system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.4;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-tap-highlight-color:transparent}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 48px}
+h1,h2{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;text-wrap:balance;margin:0}
+h1{font-size:2.4rem;font-weight:700;line-height:1;padding-top:20px}
+.sub{color:var(--muted);margin:6px 0 14px;font-size:.92rem}
+.status{color:var(--muted);font-size:.85rem;min-height:1.2em;margin-bottom:10px}
+.hint{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:.9rem;margin:0 0 14px}
+.hint b{font-weight:600}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card .lbl{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card .val{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.5rem;font-weight:700;line-height:1.1;margin-top:2px}
+.card .in{font-size:.85rem;color:var(--muted)}
+.card.r .val{color:var(--reta)}.card.t .val{color:var(--testo)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+.month{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.25rem;font-weight:700;margin:18px 0 6px;color:var(--muted)}
+.row{display:grid;grid-template-columns:4.6rem 1fr;gap:6px 10px;align-items:center;padding:8px 8px;border-top:1px solid var(--line);border-radius:6px}
+.row:last-child{border-bottom:1px solid var(--line)}
+.row.today{background:var(--today)}
+.row .d{font-variant-numeric:tabular-nums;line-height:1.15}
+.row .d b{font-weight:600;font-size:1.02rem;display:block}
+.row .d span{font-size:.78rem;color:var(--muted)}
+.row.today .d span::after{content:" · tänään";color:var(--accent);font-weight:600}
+.shots{display:flex;gap:8px;flex-wrap:wrap}
+.shot{display:flex;align-items:center;gap:7px;border-radius:8px;padding:8px 10px;cursor:pointer;user-select:none;-webkit-user-select:none;font-weight:500;font-size:.95rem;border:1px solid transparent;touch-action:manipulation}
+.shot.r{background:var(--reta-bg);color:var(--reta)}.shot.t{background:var(--testo-bg);color:var(--testo)}
+.shot input{width:20px;height:20px;margin:0;accent-color:var(--ok)}
+.shot.done{opacity:.55;text-decoration:line-through}
+.shot.late{border-color:var(--late)}
+.shot.late::after{content:"myöhässä";font-size:.7rem;color:var(--late);text-decoration:none;font-weight:600}
+.note{grid-column:2;width:100%;font:400 16px Barlow,system-ui,sans-serif;color:var(--text);background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:4px 0;-webkit-appearance:none;appearance:none}
+.note::placeholder{color:var(--muted);opacity:.6}
+.note:focus{outline:none;border-bottom-color:var(--accent)}
+input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toggle{display:block;width:100%;margin:6px 0 4px;padding:10px;font:500 .95rem Barlow,system-ui,sans-serif;color:var(--muted);background:var(--chip);border:0;border-radius:8px;cursor:pointer;touch-action:manipulation}
+.foot{margin-top:22px;font-size:.85rem;color:var(--muted)}
+details.backup{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+details.backup summary{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.15rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+details.backup p{margin:8px 0;font-size:.9rem;color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.btn{flex:1 1 0;min-width:0;padding:10px 12px;font:600 .95rem Barlow,system-ui,sans-serif;color:var(--accent-ink);background:var(--accent);border:0;border-radius:8px;cursor:pointer;touch-action:manipulation}
+.btn.secondary{background:var(--chip);color:var(--text)}
+textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px;resize:vertical}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pistospäiväkirja</h1>
+  <p class="sub">Reta 1 mg 5 pv välein · Testo E 125 mg rytmillä 4–4–5 pv (≈ 202 mg/vk)</p>
+
+  <div class="hint" id="installHint" hidden><b>Lisää kotinäytölle:</b> paina Safarin Jaa-painiketta ja valitse <b>Lisää Kotivalikkoon</b>. Käytä sovellusta sen jälkeen kotinäytön kuvakkeesta – silloin merkinnät säilyvät varmasti.</div>
+
+  <div class="next">
+    <div class="card r"><div class="lbl">Seuraava reta</div><div class="val" id="nextR">–</div><div class="in" id="nextRin"></div></div>
+    <div class="card t"><div class="lbl">Seuraava testo</div><div class="val" id="nextT">–</div><div class="in" id="nextTin"></div></div>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="legend"><span>Ruksaa kun olet pistänyt.</span><span>Riville voi kirjoittaa muistiinpanon (esim. pistospaikka).</span></div>
+  <div id="list"></div>
+
+  <details class="backup">
+    <summary>Varmuuskopio</summary>
+    <p>Merkinnät tallentuvat vain tähän puhelimeen. Ota kopio silloin tällöin talteen, esimerkiksi Muistiinpanoihin.</p>
+    <div class="btns">
+      <button type="button" class="btn" id="exportBtn">Jaa / kopioi merkinnät</button>
+      <button type="button" class="btn secondary" id="importBtn">Palauta kopiosta</button>
+    </div>
+    <textarea id="io" rows="4" hidden placeholder="Liitä varmuuskopio tähän"></textarea>
+    <div class="status" id="ioStatus"></div>
+  </details>
+
+  <div class="foot">Aikataulu alkaa 21.9.2026 ja jatkuu automaattisesti. Rytmi muutetaan tiedoston index.html alusta.</div>
+</div>
+
+<script>
+(function(){
+  // ---- Asetukset (muuta näitä jos rytmi vaihtuu) ----
+  var START='2026-09-21';          // ensimmäinen pistospäivä (molemmat)
+  var RETA_EVERY=5;                // reta joka n. päivä
+  var TESTO_PATTERN=[4,4,5];       // testo: välit päivinä, toistuu
+  var HORIZON_DAYS=70;             // kuinka pitkälle tulevaisuuteen rivejä näytetään
+  var PAST_VISIBLE=14;             // tätä vanhemmat rivit piilotetaan napin taakse
+  var KEY='pistos-store';
+
+  var WD=['su','ma','ti','ke','to','pe','la'];
+  var MONTHS=['tammikuu','helmikuu','maaliskuu','huhtikuu','toukokuu','kesäkuu','heinäkuu','elokuu','syyskuu','lokakuu','marraskuu','joulukuu'];
+  var $=function(s){return document.querySelector(s)};
+  var listEl=$('#list'),status=$('#status'),ioStatus=$('#ioStatus'),io=$('#io');
+  var store={},showOld=false,TODAY,sched,dates;
+
+  function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function parse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+  function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x}
+  function fmt(d){return d.getDate()+'.'+(d.getMonth()+1)+'.'}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+  // ---- Aikataulu (deterministinen: samat päivät joka kerta) ----
+  function build(){
+    TODAY=iso(new Date());
+    var start=parse(START),end=addDays(parse(TODAY),HORIZON_DAYS);
+    var minEnd=addDays(start,66);if(end<minEnd)end=minEnd;
+    sched={};
+    for(var d=new Date(start);d<=end;d=addDays(d,RETA_EVERY)){var k=iso(d);(sched[k]=sched[k]||{}).reta=true}
+    var t=new Date(start),i=0;
+    while(t<=end){var k2=iso(t);(sched[k2]=sched[k2]||{}).testo=true;t=addDays(t,TESTO_PATTERN[i%TESTO_PATTERN.length]);i++}
+    dates=Object.keys(sched).sort();
+  }
+
+  // ---- Piirto ----
+  function rowHtml(k){
+    var d=parse(k),s=sched[k],rec=store[k]||{};
+    var h='<div class="row'+(k===TODAY?' today':'')+'"><div class="d"><b>'+fmt(d)+'</b><span>'+WD[d.getDay()]+'</span></div><div class="shots">';
+    ['reta','testo'].forEach(function(drug){
+      if(!s[drug])return;
+      var done=!!(rec[drug]&&rec[drug].done),late=!done&&k<TODAY;
+      h+='<label class="shot '+(drug==='reta'?'r':'t')+(done?' done':'')+(late?' late':'')+'"><input type="checkbox" data-date="'+k+'" data-drug="'+drug+'"'+(done?' checked':'')+'>'+(drug==='reta'?'Reta 1 mg':'Testo 125 mg')+'</label>';
+    });
+    h+='</div><input class="note" data-date="'+k+'" placeholder="muistiinpano" autocomplete="off" autocapitalize="sentences" value="'+esc(rec.note||'')+'"></div>';
+    return h;
+  }
+  function render(){
+    var cutoff=iso(addDays(parse(TODAY),-PAST_VISIBLE));
+    var oldHtml='',newHtml='',oldN=0,lmOld=-1,lmNew=-1;
+    dates.forEach(function(k){
+      var d=parse(k),mk=d.getFullYear()*12+d.getMonth();
+      var head='<div class="month">'+MONTHS[d.getMonth()]+' '+d.getFullYear()+'</div>';
+      if(k<cutoff){if(mk!==lmOld){lmOld=mk;oldHtml+=head}oldHtml+=rowHtml(k);oldN++}
+      else{if(mk!==lmNew){lmNew=mk;newHtml+=head}newHtml+=rowHtml(k)}
+    });
+    var html='';
+    if(oldN){html+='<button type="button" class="toggle" id="toggleOld">'+(showOld?'Piilota aiemmat':'Näytä aiemmat ('+oldN+')')+'</button><div id="old"'+(showOld?'':' hidden')+'>'+oldHtml+'</div>'}
+    html+=newHtml;
+    listEl.innerHTML=html;
+    var tb=$('#toggleOld');if(tb)tb.addEventListener('click',function(){showOld=!showOld;render()});
+    listEl.querySelectorAll('input[type=checkbox]').forEach(function(c){c.addEventListener('change',function(){toggle(c.dataset.date,c.dataset.drug,c.checked)})});
+    listEl.querySelectorAll('.note').forEach(function(n){n.addEventListener('input',function(){saveNote(n.dataset.date,n.value)})});
+    renderNext();
+  }
+  function renderNext(){
+    ['reta','testo'].forEach(function(drug){
+      var next=null;
+      for(var j=0;j<dates.length;j++){var k=dates[j];if(sched[k][drug]&&!(store[k]&&store[k][drug]&&store[k][drug].done)){next=k;break}}
+      var v=$(drug==='reta'?'#nextR':'#nextT'),inEl=$(drug==='reta'?'#nextRin':'#nextTin');
+      if(!next){v.textContent='–';inEl.textContent='kaikki merkitty';return}
+      var d=parse(next),diff=Math.round((d-parse(TODAY))/86400000);
+      v.textContent=WD[d.getDay()]+' '+fmt(d);
+      inEl.textContent=diff===0?'tänään':diff<0?Math.abs(diff)+' pv myöhässä':diff+' pv päästä';
+    });
+  }
+
+  // ---- Tallennus (vain tähän laitteeseen) ----
+  function load(){try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&typeof o==='object')store=o}}catch(e){}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){status.textContent='Tallennus epäonnistui – tarkista puhelimen vapaa tila.'}}
+  function toggle(k,drug,done){store[k]=store[k]||{};store[k][drug]={done:done,ts:done?Date.now():null};save();render()}
+  function saveNote(k,val){store[k]=store[k]||{};if(val)store[k].note=val;else delete store[k].note;save()}
+  function countEntries(){return Object.keys(store).filter(function(k){var r=store[k];return r&&((r.reta&&r.reta.done)||(r.testo&&r.testo.done)||r.note)}).length}
+
+  // ---- Varmuuskopio ----
+  function exportText(){return JSON.stringify({app:'pistokset',v:1,exported:iso(new Date()),store:store})}
+  $('#exportBtn').addEventListener('click',function(){
+    var text=exportText(),n=countEntries();
+    var showText=function(){io.hidden=false;io.value=text;io.select();ioStatus.textContent='Kopioi teksti kentästä talteen.'};
+    var copy=function(){
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){ioStatus.textContent='Kopioitu leikepöydälle ('+n+' päivää).'},showText)}
+      else showText();
+    };
+    if(navigator.share){navigator.share({title:'Pistospäiväkirja – varmuuskopio '+iso(new Date()),text:text}).then(function(){ioStatus.textContent='Jaettu ('+n+' päivää).'},function(e){if(e&&e.name==='AbortError')return;copy()})}
+    else copy();
+  });
+  $('#importBtn').addEventListener('click',function(){
+    if(io.hidden||!io.value.trim()){io.hidden=false;io.value='';io.focus();ioStatus.textContent='Liitä varmuuskopio kenttään ja paina Palauta uudelleen.';return}
+    try{
+      var o=JSON.parse(io.value),src=o&&o.store?o.store:o;
+      if(!src||typeof src!=='object')throw new Error('bad');
+      var n=0;
+      Object.keys(src).forEach(function(k){if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&src[k]&&typeof src[k]==='object'){store[k]=Object.assign({},store[k]||{},src[k]);n++}});
+      if(!n)throw new Error('empty');
+      save();render();io.hidden=true;io.value='';ioStatus.textContent='Palautettu '+n+' päivän merkinnät.';
+    }catch(e){ioStatus.textContent='Tekstiä ei tunnistettu varmuuskopioksi.'}
+  });
+
+  // ---- Käynnistys ----
+  load();build();render();
+  var standalone=window.navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  if(!standalone)$('#installHint').hidden=false;
+  if(navigator.storage&&navigator.storage.persist){try{navigator.storage.persist()}catch(e){}}
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&iso(new Date())!==TODAY){build();render()}});
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){})}
+})();
+</script>
+</body>
+</html>
