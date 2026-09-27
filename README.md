@@ -1,7 +1,8 @@
 # Pistospäiväkirja
 
-Kotinäytölle asennettava web-sovellus iPhonelle. Ei vaadi App Storea, tiliä eikä palvelinta:
-kaikki merkinnät tallentuvat puhelimeen (localStorage), ja sovellus toimii myös ilman verkkoa.
+Kotinäytölle asennettava web-sovellus iPhonelle. Ei vaadi App Storea eikä tiliä. Merkinnät
+tallentuvat puhelimeen ja synkronoituvat omaan Supabase-tietokantaan salaisen avaimen alla,
+joten samat merkinnät näkyvät Safarissa, kotinäytön sovelluksessa ja Macilla. Toimii myös ilman verkkoa.
 
 ## Tiedostot
 
@@ -9,6 +10,7 @@ kaikki merkinnät tallentuvat puhelimeen (localStorage), ja sovellus toimii myö
 |---|---|
 | `index.html` | Koko sovellus: ulkoasu, aikataulu, tallennus, varmuuskopio |
 | `manifest.json` | Kertoo iPhonelle, että sivun voi asentaa sovelluksena (nimi, kuvake, värit) |
+| `supabase.sql` | Tietokannan taulu ja funktiot (ajettu kerran Supabasen SQL-editorissa) |
 | `sw.js` | Service worker: tallentaa sovelluksen välimuistiin, jotta se aukeaa ilman verkkoa |
 | `icon-*.png` | Kotinäytön kuvakkeet |
 | `.nojekyll` | Kertoo GitHub Pagesille, ettei tiedostoja tarvitse käsitellä |
@@ -21,11 +23,17 @@ kaikki merkinnät tallentuvat puhelimeen (localStorage), ja sovellus toimii myö
    sovelluksen tiedot säilyvät varmasti; pelkässä Safarissa iOS voi siivota käyttämättömän
    sivun tiedot pois viikon jälkeen.
 
-## Merkintöjen varmuuskopio
+## Pilvitallennus
 
-Merkinnät ovat vain siinä puhelimessa, johon ne on tehty. Sovelluksen alaosassa on
-**Varmuuskopio**-osio: *Jaa / kopioi merkinnät* lähettää ne tekstinä esimerkiksi
-Muistiinpanoihin, ja *Palauta kopiosta* tuo ne takaisin (esim. uuteen puhelimeen).
+Sovellus luo ensimmäisellä avauksella salaisen synkronointiavaimen ja tallentaa merkinnät
+sen alle Supabaseen. Toisella laitteella (tai Safarissa vs. kotinäytön sovelluksessa) samat
+merkinnät saa näkyviin painamalla **Pilvitallennus → Jaa linkki toiselle laitteelle** ja
+avaamalla linkin siellä – tai liittämällä avaimen kohtaan *Käytä toista avainta*.
+
+Supabasen julkinen avain (`SB_KEY`) on tarkoitettu selaimeen. Taulua ei voi lukea suoraan;
+ainoa pääsy on funktioiden kautta oikealla synkronointiavaimella. Älä jaa synkronointiavainta.
+
+Alaosassa on lisäksi **Varmuuskopio**: merkinnät voi kopioida tekstinä talteen ja palauttaa.
 
 ## Rytmin muuttaminen
 

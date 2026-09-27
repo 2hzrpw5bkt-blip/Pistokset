@@ -18,14 +18,14 @@
 :root{
   --bg:#F4F4EF;--surface:#FFFFFF;--line:#DCDDD5;--text:#17181A;--muted:#6B6F75;
   --accent:#8A9A00;--accent-ink:#17181A;--chip:#EDEEE6;--reta:#2F6FB5;--reta-bg:#E3ECF7;--testo:#B0662A;--testo-bg:#F7EBDF;
-  --ok:#2E7D4F;--late:#B5541B;--today:#FBF7D9;
+  --ok:#2E7D4F;--late:#B5541B;--today:#FBF7D9;--warn-bg:#FBF1D9;
   color-scheme:light dark;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#121417;--surface:#1B1E23;--line:#2B2F36;--text:#EDEDE8;--muted:#8B9098;
     --accent:#D7F000;--accent-ink:#121417;--chip:#242830;--reta:#8FB8EE;--reta-bg:#1D2A3B;--testo:#F0B074;--testo-bg:#3A2A1C;
-    --ok:#7BD48F;--late:#F0A060;--today:#2A2C1A;
+    --ok:#7BD48F;--late:#F0A060;--today:#2A2C1A;--warn-bg:#33301C;
   }
 }
 *{box-sizing:border-box}
@@ -67,13 +67,17 @@ h1{font-size:2.4rem;font-weight:700;line-height:1;padding-top:20px}
 input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .toggle{display:block;width:100%;margin:6px 0 4px;padding:10px;font:500 .95rem Barlow,system-ui,sans-serif;color:var(--muted);background:var(--chip);border:0;border-radius:8px;cursor:pointer;touch-action:manipulation}
 .foot{margin-top:22px;font-size:.85rem;color:var(--muted)}
-details.backup{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-details.backup summary{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.15rem;font-weight:700;cursor:pointer;touch-action:manipulation}
-details.backup p{margin:8px 0;font-size:.9rem;color:var(--muted)}
+details.panel{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+details.panel summary{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.15rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+details.panel p{margin:8px 0;font-size:.9rem;color:var(--muted)}
+details.panel h3{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-size:1.05rem;font-weight:700;margin:16px 0 4px}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .btn{flex:1 1 0;min-width:0;padding:10px 12px;font:600 .95rem Barlow,system-ui,sans-serif;color:var(--accent-ink);background:var(--accent);border:0;border-radius:8px;cursor:pointer;touch-action:manipulation}
 .btn.secondary{background:var(--chip);color:var(--text)}
-textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px;resize:vertical}
+textarea.io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px;resize:vertical}
+.keybox{font:500 15px ui-monospace,Menlo,monospace;letter-spacing:.04em;background:var(--chip);border-radius:8px;padding:8px 10px;word-break:break-all;user-select:all;-webkit-user-select:all}
+.cloud{font-size:.85rem;color:var(--muted);margin:0 0 8px}
+.cloud.err{color:var(--late)}
 </style>
 </head>
 <body>
@@ -81,7 +85,7 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
   <h1>Pistospäiväkirja</h1>
   <p class="sub">Reta 1 mg 5 pv välein · Testo E 125 mg rytmillä 4–4–5 pv (≈ 202 mg/vk)</p>
 
-  <div class="hint" id="installHint" hidden><b>Lisää kotinäytölle:</b> paina Safarin Jaa-painiketta ja valitse <b>Lisää Kotivalikkoon</b>. Käytä sovellusta sen jälkeen kotinäytön kuvakkeesta – silloin merkinnät säilyvät varmasti.</div>
+  <div class="hint" id="installHint" hidden><b>Lisää kotinäytölle:</b> paina Safarin Jaa-painiketta ja valitse <b>Lisää Kotivalikkoon</b>. Merkinnät tallentuvat pilveen, joten samat merkinnät näkyvät sekä täällä että kotinäytön sovelluksessa.</div>
 
   <div class="next">
     <div class="card r"><div class="lbl">Seuraava reta</div><div class="val" id="nextR">–</div><div class="in" id="nextRin"></div></div>
@@ -92,14 +96,25 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
   <div class="legend"><span>Ruksaa kun olet pistänyt.</span><span>Riville voi kirjoittaa muistiinpanon (esim. pistospaikka).</span></div>
   <div id="list"></div>
 
-  <details class="backup">
-    <summary>Varmuuskopio</summary>
-    <p>Merkinnät tallentuvat vain tähän puhelimeen. Ota kopio silloin tällöin talteen, esimerkiksi Muistiinpanoihin.</p>
+  <details class="panel" id="syncPanel">
+    <summary>Pilvitallennus</summary>
+    <p class="cloud" id="cloudStatus"></p>
+    <p>Merkinnät tallentuvat omaan Supabase-tietokantaasi tämän avaimen alle. Sama avain toisella laitteella tai selaimessa näyttää samat merkinnät. Älä jaa avainta muille.</p>
+    <div class="keybox" id="keyBox"></div>
     <div class="btns">
-      <button type="button" class="btn" id="exportBtn">Jaa / kopioi merkinnät</button>
+      <button type="button" class="btn" id="shareLinkBtn">Jaa linkki toiselle laitteelle</button>
+      <button type="button" class="btn secondary" id="linkBtn">Käytä toista avainta</button>
+    </div>
+    <textarea class="io" id="keyIo" rows="2" hidden placeholder="Liitä avain tai linkki tähän"></textarea>
+    <div class="status" id="keyStatus"></div>
+
+    <h3>Varmuuskopio</h3>
+    <p>Merkinnät voi myös kopioida tekstinä talteen ja palauttaa myöhemmin.</p>
+    <div class="btns">
+      <button type="button" class="btn secondary" id="exportBtn">Kopioi merkinnät</button>
       <button type="button" class="btn secondary" id="importBtn">Palauta kopiosta</button>
     </div>
-    <textarea id="io" rows="4" hidden placeholder="Liitä varmuuskopio tähän"></textarea>
+    <textarea class="io" id="io" rows="4" hidden placeholder="Liitä varmuuskopio tähän"></textarea>
     <div class="status" id="ioStatus"></div>
   </details>
 
@@ -114,13 +129,17 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
   var TESTO_PATTERN=[4,4,5];       // testo: välit päivinä, toistuu
   var HORIZON_DAYS=70;             // kuinka pitkälle tulevaisuuteen rivejä näytetään
   var PAST_VISIBLE=14;             // tätä vanhemmat rivit piilotetaan napin taakse
-  var KEY='pistos-store';
+  var KEY='pistos-store',SYNC_KEY='pistos-sync-key';
+
+  // ---- Pilvi (Supabase). Julkinen avain on tarkoitettu selaimeen; tiedot suojaa salainen synkronointiavain. ----
+  var SB_URL='https://ccsdlzidjacxgayefmuc.supabase.co';
+  var SB_KEY='sb_publishable_FbfioLOArfjeAIgv0Mv9yQ_aFXYwLl7';
 
   var WD=['su','ma','ti','ke','to','pe','la'];
   var MONTHS=['tammikuu','helmikuu','maaliskuu','huhtikuu','toukokuu','kesäkuu','heinäkuu','elokuu','syyskuu','lokakuu','marraskuu','joulukuu'];
   var $=function(s){return document.querySelector(s)};
-  var listEl=$('#list'),status=$('#status'),ioStatus=$('#ioStatus'),io=$('#io');
-  var store={},showOld=false,TODAY,sched,dates;
+  var listEl=$('#list'),status=$('#status'),ioStatus=$('#ioStatus'),io=$('#io'),cloudStatus=$('#cloudStatus'),keyBox=$('#keyBox'),keyIo=$('#keyIo'),keyStatus=$('#keyStatus');
+  var store={},showOld=false,TODAY,sched,dates,syncKey=null,dirty=false,pushTimer=null,pushing=false;
 
   function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
   function parse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
@@ -153,6 +172,7 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
     return h;
   }
   function render(){
+    var focused=document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('note')?document.activeElement.dataset.date:null;
     var cutoff=iso(addDays(parse(TODAY),-PAST_VISIBLE));
     var oldHtml='',newHtml='',oldN=0,lmOld=-1,lmNew=-1;
     dates.forEach(function(k){
@@ -168,6 +188,7 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
     var tb=$('#toggleOld');if(tb)tb.addEventListener('click',function(){showOld=!showOld;render()});
     listEl.querySelectorAll('input[type=checkbox]').forEach(function(c){c.addEventListener('change',function(){toggle(c.dataset.date,c.dataset.drug,c.checked)})});
     listEl.querySelectorAll('.note').forEach(function(n){n.addEventListener('input',function(){saveNote(n.dataset.date,n.value)})});
+    if(focused){var f=listEl.querySelector('.note[data-date="'+focused+'"]');if(f){f.focus();try{f.setSelectionRange(f.value.length,f.value.length)}catch(e){}}}
     renderNext();
   }
   function renderNext(){
@@ -182,24 +203,109 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
     });
   }
 
-  // ---- Tallennus (vain tähän laitteeseen) ----
+  // ---- Tallennus laitteeseen ----
   function load(){try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&typeof o==='object')store=o}}catch(e){}}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){status.textContent='Tallennus epäonnistui – tarkista puhelimen vapaa tila.'}}
-  function toggle(k,drug,done){store[k]=store[k]||{};store[k][drug]={done:done,ts:done?Date.now():null};save();render()}
-  function saveNote(k,val){store[k]=store[k]||{};if(val)store[k].note=val;else delete store[k].note;save()}
+  function touch(k){store[k]=store[k]||{};store[k].u=Date.now();return store[k]}
+  function toggle(k,drug,done){var r=touch(k);r[drug]={done:done,ts:done?Date.now():null};save();render();schedulePush()}
+  function saveNote(k,val){var r=touch(k);if(val)r.note=val;else delete r.note;save();schedulePush()}
   function countEntries(){return Object.keys(store).filter(function(k){var r=store[k];return r&&((r.reta&&r.reta.done)||(r.testo&&r.testo.done)||r.note)}).length}
+
+  // ---- Pilvi ----
+  var cloudOn=SB_URL.indexOf('http')===0&&SB_KEY.indexOf('__')!==0;
+  function rpc(name,body){
+    return fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(t){return t?JSON.parse(t):null});
+  }
+  function newKey(){var a='abcdefghjkmnpqrstuvwxyz23456789',out='',b=new Uint8Array(26);(window.crypto||window.msCrypto).getRandomValues(b);for(var i=0;i<b.length;i++)out+=a[b[i]%a.length];return out}
+  function validKey(k){return /^[a-z0-9]{20,64}$/.test(k)}
+  function keyFromText(t){t=(t||'').trim();var m=t.match(/[#&?]k=([a-z0-9]{20,64})/);if(m)return m[1];t=t.toLowerCase();return validKey(t)?t:null}
+  function setCloud(msg,err){cloudStatus.textContent=msg;cloudStatus.className='cloud'+(err?' err':'')}
+  function shareUrl(){return location.origin+location.pathname+'#k='+syncKey}
+  function showKey(){keyBox.textContent=syncKey||'–'}
+
+  // Yhdistä pilven tiedot paikallisiin: kummankin päivän uudempi versio voittaa.
+  function merge(remote){
+    var localChanged=false,remoteStale=false;
+    remote=remote&&typeof remote==='object'?remote:{};
+    Object.keys(remote).forEach(function(k){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(k))return;
+      var r=remote[k],l=store[k];
+      if(!l){store[k]=r;localChanged=true}
+      else if((r.u||0)>(l.u||0)){store[k]=r;localChanged=true}
+      else if((l.u||0)>(r.u||0))remoteStale=true;
+    });
+    Object.keys(store).forEach(function(k){if(!remote[k])remoteStale=true});
+    return {localChanged:localChanged,remoteStale:remoteStale};
+  }
+  var pulling=false;
+  function pull(){
+    if(!cloudOn||!syncKey||pulling)return Promise.resolve();
+    pulling=true;
+    return rpc('diary_get',{p_key:syncKey}).then(function(remote){
+      var m=merge(remote);
+      if(m.localChanged){save();render()}
+      if(m.remoteStale||dirty)schedulePush(0);
+      else setCloud('Synkronoitu pilveen · '+countEntries()+' päivää');
+    }).catch(function(e){setCloud('Ei yhteyttä pilveen – merkinnät tallennetaan puhelimeen ja synkronoidaan myöhemmin.',true)})
+      .then(function(){pulling=false});
+  }
+  function schedulePush(delay){
+    dirty=true;
+    if(!cloudOn||!syncKey)return;
+    clearTimeout(pushTimer);
+    pushTimer=setTimeout(push,delay==null?800:delay);
+  }
+  function push(){
+    if(!cloudOn||!syncKey||pushing)return;
+    pushing=true;dirty=false;
+    setCloud('Tallennetaan pilveen…');
+    rpc('diary_set',{p_key:syncKey,p_data:store}).then(function(){
+      setCloud('Synkronoitu pilveen · '+countEntries()+' päivää');
+    }).catch(function(){dirty=true;setCloud('Ei yhteyttä pilveen – merkinnät tallennetaan puhelimeen ja synkronoidaan myöhemmin.',true)})
+      .then(function(){pushing=false;if(dirty)schedulePush(5000)});
+  }
+  function initKey(){
+    var fromUrl=keyFromText(location.hash);
+    var stored=null;try{stored=localStorage.getItem(SYNC_KEY)}catch(e){}
+    if(fromUrl){
+      syncKey=fromUrl;
+      try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+    }else if(stored&&validKey(stored)){syncKey=stored}
+    else{syncKey=newKey();dirty=countEntries()>0}
+    try{localStorage.setItem(SYNC_KEY,syncKey)}catch(e){}
+    showKey();
+  }
+  function switchKey(k){
+    syncKey=k;try{localStorage.setItem(SYNC_KEY,syncKey)}catch(e){}
+    showKey();dirty=countEntries()>0;
+    return pull();
+  }
+
+  $('#shareLinkBtn').addEventListener('click',function(){
+    var url=shareUrl();
+    var done=function(msg){keyStatus.textContent=msg};
+    var showText=function(){keyIo.hidden=false;keyIo.value=url;keyIo.select();done('Kopioi linkki kentästä ja avaa se toisella laitteella.')};
+    var copy=function(){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){done('Linkki kopioitu. Avaa se toisella laitteella tai selaimessa.')},showText)}else showText()};
+    if(navigator.share){navigator.share({title:'Pistospäiväkirja',text:'Avaa tämä linkki, niin merkinnät synkronoituvat:',url:url}).then(function(){done('Linkki jaettu.')},function(e){if(e&&e.name==='AbortError')return;copy()})}
+    else copy();
+  });
+  $('#linkBtn').addEventListener('click',function(){
+    if(keyIo.hidden||!keyIo.value.trim()){keyIo.hidden=false;keyIo.value='';keyIo.focus();keyStatus.textContent='Liitä toisen laitteen avain tai linkki kenttään ja paina nappia uudelleen.';return}
+    var k=keyFromText(keyIo.value);
+    if(!k){keyStatus.textContent='Avainta ei tunnistettu.';return}
+    if(k===syncKey){keyStatus.textContent='Tämä avain on jo käytössä.';keyIo.hidden=true;return}
+    keyIo.hidden=true;keyIo.value='';
+    switchKey(k).then(function(){keyStatus.textContent='Avain vaihdettu. Merkinnät yhdistetty.'});
+  });
 
   // ---- Varmuuskopio ----
   function exportText(){return JSON.stringify({app:'pistokset',v:1,exported:iso(new Date()),store:store})}
   $('#exportBtn').addEventListener('click',function(){
     var text=exportText(),n=countEntries();
     var showText=function(){io.hidden=false;io.value=text;io.select();ioStatus.textContent='Kopioi teksti kentästä talteen.'};
-    var copy=function(){
-      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){ioStatus.textContent='Kopioitu leikepöydälle ('+n+' päivää).'},showText)}
-      else showText();
-    };
-    if(navigator.share){navigator.share({title:'Pistospäiväkirja – varmuuskopio '+iso(new Date()),text:text}).then(function(){ioStatus.textContent='Jaettu ('+n+' päivää).'},function(e){if(e&&e.name==='AbortError')return;copy()})}
-    else copy();
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){ioStatus.textContent='Kopioitu leikepöydälle ('+n+' päivää).'},showText)}
+    else showText();
   });
   $('#importBtn').addEventListener('click',function(){
     if(io.hidden||!io.value.trim()){io.hidden=false;io.value='';io.focus();ioStatus.textContent='Liitä varmuuskopio kenttään ja paina Palauta uudelleen.';return}
@@ -207,18 +313,26 @@ textarea#io{width:100%;font:400 14px ui-monospace,Menlo,monospace;color:var(--te
       var o=JSON.parse(io.value),src=o&&o.store?o.store:o;
       if(!src||typeof src!=='object')throw new Error('bad');
       var n=0;
-      Object.keys(src).forEach(function(k){if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&src[k]&&typeof src[k]==='object'){store[k]=Object.assign({},store[k]||{},src[k]);n++}});
+      Object.keys(src).forEach(function(k){if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&src[k]&&typeof src[k]==='object'){store[k]=Object.assign({},store[k]||{},src[k]);store[k].u=Date.now();n++}});
       if(!n)throw new Error('empty');
-      save();render();io.hidden=true;io.value='';ioStatus.textContent='Palautettu '+n+' päivän merkinnät.';
+      save();render();io.hidden=true;io.value='';ioStatus.textContent='Palautettu '+n+' päivän merkinnät.';schedulePush();
     }catch(e){ioStatus.textContent='Tekstiä ei tunnistettu varmuuskopioksi.'}
   });
 
   // ---- Käynnistys ----
-  load();build();render();
+  load();build();render();initKey();
   var standalone=window.navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
   if(!standalone)$('#installHint').hidden=false;
+  if(!cloudOn)setCloud('Pilvitallennus ei ole käytössä – merkinnät tallentuvat vain tähän laitteeseen.',true);
+  else{setCloud('Yhdistetään pilveen…');pull()}
   if(navigator.storage&&navigator.storage.persist){try{navigator.storage.persist()}catch(e){}}
-  document.addEventListener('visibilitychange',function(){if(!document.hidden&&iso(new Date())!==TODAY){build();render()}});
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){if(dirty)schedulePush(0);return}
+    if(iso(new Date())!==TODAY){build();render()}
+    pull();
+  });
+  window.addEventListener('online',function(){pull()});
+  window.addEventListener('hashchange',function(){var k=keyFromText(location.hash);if(k&&k!==syncKey){switchKey(k)}try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}});
   if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){})}
 })();
 </script>

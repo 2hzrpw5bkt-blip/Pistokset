@@ -1,6 +1,6 @@
 // Pistospäiväkirja – service worker: sovellus toimii myös ilman verkkoa.
 // Kun päivität sovellusta, nosta CACHE-versionumeroa.
-var CACHE = 'pistokset-v2';
+var CACHE = 'pistokset-v3';
 var ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', function (e) {
